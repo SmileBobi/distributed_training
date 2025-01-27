@@ -244,7 +244,7 @@ class PrepareModuleOutput(ParallelStyle):
     def _apply(self, module: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
 ```
 
-## 2.3 distributed_tensor
+## 2.3 distributed_tensor (partition tensor)
 **针对input linear embedding output 的处理都有专门的函数:** <br>
 ```python
 def _partition_embedding_fn(self, name, module, device_mesh):
@@ -400,7 +400,7 @@ def distribute_tensor(
 ```
 
 ## 2.4 distributed module
-**这个函数提供了三个方法来控制模块的参数、输入和输出：** <br>
+**这个函数提供了三个方法来控制模块的参数、输入和输出, 返回一个Param 和 Buffer 全是DTensor的模型.** <br>
 
 ```python
 def distribute_module(
@@ -541,6 +541,7 @@ def distribute_module(
 
     return module
 ```
+
 
 
 
