@@ -59,7 +59,7 @@ for layer_id, transformer_block in model.layers.items():
 
 # 2 Pytorch 源码对 Tensor Parallel 的处理
 
-## 2.1 parallelize_model
+## 2.1 parallelize module
 - [torch/distributed/tensor/parallel/api.py](https://github1s.com/pytorch/pytorch/blob/main/torch/distributed/tensor/parallel/api.py)
 
 **注意: 这里比较重要的是 parallelize_plan, 根据这个plan 我们递归的将model的不同部分进行parallelize.** <br>
@@ -399,7 +399,7 @@ def distribute_tensor(
     )
 ```
 
-## 2.4 distributed module
+## 2.4 distributed_module
 **这个函数提供了三个方法来控制模块的参数、输入和输出, 返回一个Param 和 Buffer 全是DTensor的模型.** <br>
 
 ```python
