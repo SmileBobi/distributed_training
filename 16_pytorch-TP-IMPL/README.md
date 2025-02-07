@@ -83,11 +83,10 @@ torchrun --nnodes=1 --nproc-per-node=2 --master-addr=localhost --master-port=597
 ![pytorch_tp_structure](./images/pytorch_parallelize_module.png)
 
 # 3 关键点阐述
-- 用户使用parallel_module对常规模型进行warpper, 返回parallel后的模型;
-- parallel_model 的__init__ 里通过hook将需要的切分函数注册到module里，以在合适时机进行通信；
-- 具体的
-
-
+- 用户使用 **parallel_module** 对常规模型进行warpper, 返回parallel后的模型;
+- parallel_model 通过 **distribute_model** 调用每个sub-module 对应的 ParallelStyle 具体instance 的 _apply 方法来完成对tensor的切分和注册hook函数；
+- 具体的切分函数在Placement 的具体实例 Shard/_StridedShard/Replica/Partial 内实现;
+- ParallelStype instance 的 method 里通过 **distribute_tensor** 调度到 Placement的类方法里;
 
 # 4 Pytorch 源码详解
 
