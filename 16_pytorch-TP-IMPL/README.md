@@ -1,5 +1,78 @@
 # Tensor Parallel
 
+# 1 Tensor Parallel Example
+
+```python
+import os
+import sys
+import torch
+import torch.nn as nn
+
+from torch.distributed.tensor.parallel import (
+    parallelize_module,
+    ColwiseParallel,
+    RowwiseParallel,
+)
+
+from torch.distributed._tensor.device_mesh import init_device_mesh
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+class ToyModel(nn.Module):
+    """MLP based model"""
+
+    def __init__(self):
+        super(ToyModel, self).__init__()
+        self.in_proj = nn.Linear(10, 32)
+        self.relu = nn.ReLU()
+        self.out_proj = nn.Linear(32, 5)
+
+    def forward(self, x):
+        return self.out_proj(self.relu(self.in_proj(x)))
+
+def train(model, optimizer, train_step):
+    input = torch.randn(20, 10, device="cuda")
+    target = torch.randn(20, 5, device="cuda")
+    
+    for i in range(train_step):
+        # For TP, input needs to be same across all TP ranks.
+        # Setting the random seed is to mimic the behavior of dataloader.
+        optimizer.zero_grad()
+        output = model(input)
+        loss = (output - target).var()
+        print(f"===============loss : {loss} \n")
+        loss.backward()
+        optimizer.step()
+
+if __name__ == "__main__":
+    torch.manual_seed(45)    
+    _world_size = int(os.environ["WORLD_SIZE"])
+    device_mesh = init_device_mesh(device_type="cuda", mesh_shape=(1, _world_size), mesh_dim_names=("dp", "tp")) # 在这里设置device
+    _rank = device_mesh.get_rank()
+
+    print(f"Starting PyTorch TP example on rank {_rank}.")
+    assert (
+        _world_size % 2 == 0
+    ), f"TP examples require even number of GPUs, but got {_world_size} gpus"
+
+
+    tp_model = ToyModel().to("cuda").train()
+
+    # Custom parallelization plan for the model
+    tp_model = parallelize_module(
+        module=tp_model,
+        device_mesh=device_mesh["tp"],
+        parallelize_plan={
+            "in_proj": ColwiseParallel(),
+            "out_proj": RowwiseParallel(),
+        },
+    )
+
+    optimizer = torch.optim.AdamW(tp_model.parameters(), lr=0.05, foreach=True)
+    
+    train(tp_model, optimizer, 10)
+
+```
+
 # 1 Torchtitan 中 TP 的应用
 - [parallelism_llama.py](https://github1s.com/pytorch/torchtitan/blob/main/torchtitan/parallelisms/parallelize_llama.py#L129)
 ## 1.1 对 embedding-norm-output进行parallel
@@ -57,9 +130,20 @@ for layer_id, transformer_block in model.layers.items():
     )
 ```
 
-# 2 Pytorch 源码对 Tensor Parallel 的处理
+**运行命令** <br>
+```shell
+torchrun --nnodes=1 --nproc-per-node=2 --master-addr=localhost --master-port=5972 tensor_parallel_example.py
+```
 
-## 2.1 parallelize module
+# 2 TP用到的主要数据结构及调度流程
+
+![pytorch_tp_structure](./images/pytorch_parallelize_module.png)
+
+# 3 关键点阐述
+
+# 4 Pytorch 源码详解
+
+## 4.1 parallelize module
 - [torch/distributed/tensor/parallel/api.py](https://github1s.com/pytorch/pytorch/blob/main/torch/distributed/tensor/parallel/api.py)
 
 **注意: 这里比较重要的是 parallelize_plan, 根据这个plan 我们递归的将model的不同部分进行parallelize.** <br>
@@ -164,7 +248,7 @@ def parallelize_module(  # type: ignore[return]
         )
 ```
 
-## 2.2 ParallelStyle
+## 4.2 ParallelStyle
 
 - [distributed/tensor/parallel/stype.py](https://github1s.com/pytorch/pytorch/blob/main/torch/distributed/tensor/parallel/style.py#L30-L31)
 
@@ -244,7 +328,7 @@ class PrepareModuleOutput(ParallelStyle):
     def _apply(self, module: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
 ```
 
-## 2.3 distributed_tensor (partition tensor)
+## 4.3 distributed_tensor (partition tensor)
 **针对input linear embedding output 的处理都有专门的函数:** <br>
 ```python
 def _partition_embedding_fn(self, name, module, device_mesh):
@@ -399,7 +483,7 @@ def distribute_tensor(
     )
 ```
 
-## 2.4 distributed_module
+## 4.4 distributed_module
 **这个函数提供了三个方法来控制模块的参数、输入和输出, 返回一个Param 和 Buffer 全是DTensor的模型.** <br>
 
 ```python
