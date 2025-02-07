@@ -87,6 +87,11 @@ torchrun --nnodes=1 --nproc-per-node=2 --master-addr=localhost --master-port=597
 - parallel_model 通过 **distribute_model** 调用每个sub-module 对应的 ParallelStyle 具体instance 的 _apply 方法来完成对tensor的切分和注册hook函数；
 - 具体的切分函数在Placement 的具体实例 Shard/_StridedShard/Replica/Partial 内实现;
 - ParallelStype instance 的 method 里通过 **distribute_tensor** 调度到 Placement的类方法里;
+- 第一次算子调度时tensor的类型时DTensor, 这样根据pytorch 的dispatcher 机制，会触发到dispatchKey 为 python的调度；
+- 第二次调度所有算子会到 DTensor 的 __torch_dispatch__;
+- __torch_dispatch__ 会调度到torch.distributed.tensor._dispatch.OpDispatcher.dispatch(func, args, kwargs);
+- 在OpDispatcher.dispatch里将DTensor 转换为 local tensor;
+- 最后在dispatch 里调用torch._ops.OpOverload 来执行算子.
 
 # 4 Pytorch 源码详解
 
