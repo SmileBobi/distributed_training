@@ -1,7 +1,7 @@
 # Tensor Parallel
 
 # 1 Tensor Parallel Example
-
+## 1.1 pytorch_tp.py 脚本
 ```python
 import os
 import sys
@@ -73,66 +73,9 @@ if __name__ == "__main__":
 
 ```
 
-# 1 Torchtitan 中 TP 的应用
-- [parallelism_llama.py](https://github1s.com/pytorch/torchtitan/blob/main/torchtitan/parallelisms/parallelize_llama.py#L129)
-## 1.1 对 embedding-norm-output进行parallel
-```python
-"""Apply tensor parallelism."""
-# 1. Parallelize the embedding and shard its outputs (which are the first
-# transformer block's inputs)
-# 2. Parallelize the root norm layer over the sequence dim
-# 3. Parallelize the final linear output layer
-parallelize_module(
-    model,
-    tp_mesh,
-    {
-        "tok_embeddings": RowwiseParallel(
-            input_layouts=Replicate(),
-            output_layouts=Shard(1),
-        ),
-        "norm": SequenceParallel(),
-        "output": ColwiseParallel(
-            input_layouts=Shard(1),
-            output_layouts=Shard(-1) if loss_parallel else Replicate(),
-            use_local_output=not loss_parallel,
-        ),
-    },
-)
-```
-
-## 1.2 对 其他layer进行parallel
-```python
-for layer_id, transformer_block in model.layers.items():
-    layer_plan = {
-        "attention_norm": SequenceParallel(),
-        "attention": prepare_module_input(
-            input_layouts=(Shard(1), None),
-            desired_input_layouts=(Replicate(), None),
-        ),
-        "attention.wq": colwise_parallel(),
-        "attention.wk": colwise_parallel(),
-        "attention.wv": colwise_parallel(),
-        "attention.wo": rowwise_parallel(output_layouts=Shard(1)),
-        "ffn_norm": SequenceParallel(),
-        "feed_forward": prepare_module_input(
-            input_layouts=(Shard(1),),
-            desired_input_layouts=(Replicate(),),
-        ),
-        "feed_forward.w1": colwise_parallel(),
-        "feed_forward.w2": rowwise_parallel(output_layouts=Shard(1)),
-        "feed_forward.w3": colwise_parallel(),
-    }
-
-    parallelize_module(
-        module=transformer_block,
-        device_mesh=tp_mesh,
-        parallelize_plan=layer_plan,
-    )
-```
-
-**运行命令** <br>
+## 1.2 运行指令
 ```shell
-torchrun --nnodes=1 --nproc-per-node=2 --master-addr=localhost --master-port=5972 tensor_parallel_example.py
+torchrun --nnodes=1 --nproc-per-node=2 --master-addr=localhost --master-port=5972 pytorch_tp.py
 ```
 
 # 2 TP用到的主要数据结构及调度流程
@@ -140,6 +83,11 @@ torchrun --nnodes=1 --nproc-per-node=2 --master-addr=localhost --master-port=597
 ![pytorch_tp_structure](./images/pytorch_parallelize_module.png)
 
 # 3 关键点阐述
+- 用户使用parallel_module对常规模型进行warpper, 返回parallel后的模型;
+- parallel_model 的__init__ 里通过hook将需要的切分函数注册到module里，以在合适时机进行通信；
+- 具体的
+
+
 
 # 4 Pytorch 源码详解
 
@@ -626,6 +574,62 @@ def distribute_module(
     return module
 ```
 
+# 5 Torchtitan 中 TP 的应用
+- [parallelism_llama.py](https://github1s.com/pytorch/torchtitan/blob/main/torchtitan/parallelisms/parallelize_llama.py#L129)
+## 5.1 对 embedding-norm-output进行parallel
+```python
+"""Apply tensor parallelism."""
+# 1. Parallelize the embedding and shard its outputs (which are the first
+# transformer block's inputs)
+# 2. Parallelize the root norm layer over the sequence dim
+# 3. Parallelize the final linear output layer
+parallelize_module(
+    model,
+    tp_mesh,
+    {
+        "tok_embeddings": RowwiseParallel(
+            input_layouts=Replicate(),
+            output_layouts=Shard(1),
+        ),
+        "norm": SequenceParallel(),
+        "output": ColwiseParallel(
+            input_layouts=Shard(1),
+            output_layouts=Shard(-1) if loss_parallel else Replicate(),
+            use_local_output=not loss_parallel,
+        ),
+    },
+)
+```
+
+## 5.2 对 其他layer进行parallel
+```python
+for layer_id, transformer_block in model.layers.items():
+    layer_plan = {
+        "attention_norm": SequenceParallel(),
+        "attention": prepare_module_input(
+            input_layouts=(Shard(1), None),
+            desired_input_layouts=(Replicate(), None),
+        ),
+        "attention.wq": colwise_parallel(),
+        "attention.wk": colwise_parallel(),
+        "attention.wv": colwise_parallel(),
+        "attention.wo": rowwise_parallel(output_layouts=Shard(1)),
+        "ffn_norm": SequenceParallel(),
+        "feed_forward": prepare_module_input(
+            input_layouts=(Shard(1),),
+            desired_input_layouts=(Replicate(),),
+        ),
+        "feed_forward.w1": colwise_parallel(),
+        "feed_forward.w2": rowwise_parallel(output_layouts=Shard(1)),
+        "feed_forward.w3": colwise_parallel(),
+    }
+
+    parallelize_module(
+        module=transformer_block,
+        device_mesh=tp_mesh,
+        parallelize_plan=layer_plan,
+    )
+```
 
 
 
