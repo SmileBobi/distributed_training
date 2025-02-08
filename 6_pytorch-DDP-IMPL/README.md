@@ -215,6 +215,17 @@ reducer 中允许自定义通信算子:
 - 使用pytorch自带通信函数，指定type就行：_register_builtin_comm_hook(distributed.py) --> register_builtin_comm_hook(reducer.hpp)
 
 
+## 3.4 _register_fused_optim
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在 DDP 中注册优化器以在参数的梯度规约完成后立即对其进行优化。<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将优化器注册到 DDP 中，使得某个参数的优化将**在该参数的梯度规约完成后立即运行**，而不是等待所有参数的梯度规约完成。这可以根据工作负载的不同带来训练速度的提升，因为优化器可以在其他参数的梯度规约仍在进行时就开始运行。此外，这种方法还有潜力减少训练过程中的峰值内存消耗，因为它只需要逐个加载单个参数的优化器状态，而不需要一次性加载所有参数的优化器状态。<br>
+
+**register_fused_optim : 将DDP 注册到optimizer中**
+- [register_fused_optim](https://github1s.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py#L2049)
+
+  **_setup_in_backward_optimizers进行backward 和 optimizer的overlap** <br>
+- [register_fused_optim](https://github1s.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py#L1018)
+
 
 
 
