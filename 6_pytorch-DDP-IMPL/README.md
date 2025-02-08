@@ -12,7 +12,7 @@ torchrun --standalone --nnodes=1 --nproc-per-node=2 multigpu_torchrun.py 4 1 --b
 ```
 
 # 3 pytorch DDP 代码解析
-- [源码链接](https://github.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py)
+- [https://github.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py](https://github1s.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py#L326)
 
 ## 3.1 DistributedDataParallel 属性和方法
 ```python
@@ -159,6 +159,7 @@ class DistributedDataParallel(Module, Joinable)
 # 1. 我们需要在使用数据并行 API 包装模块之前，将 DTensor 类型的参数转换为本地张量。
 # 2. 然后，我们注册两个钩子：一个用于在前向传播前将本地张量转换回 DTensor，
 # 3. 另一个用于在前向传播后将 DTensor 转换回本地张量。
+# 如此，我们在前向传播时按照DTesor来计算，前向传播后转换为local tensor，反向传播再转为DTensor ？？？ 这里可能有点疑问.
 # 通过这种方式集成，我们可以避免 DDP 对 DTensor 参数进行任何特殊处理，并确保 DTensor 的梯度能够正确传播回 DP，例如 DDP 的梯度桶。
 
 def _pre_dp_module_transform(module: nn.Module):
@@ -192,13 +193,26 @@ def _pre_dp_module_transform(module: nn.Module):
         >>>
     """
 
-    _localize_dtensor(module, None, None)
+    _localize_dtensor(module, None, None) # DTensor --> Local Tensor
     # TODO: To add test cases and ensure that it works for nested modules
-    module.register_forward_pre_hook(_reconstruct_dtensor)
-    module.register_forward_hook(_localize_dtensor)
+    module.register_forward_pre_hook(_reconstruct_dtensor) # Local Tensor --> DTensor
+    module.register_forward_hook(_localize_dtensor) # DTensor --> LocalTensor
 ```
 
+## 3.3 DDP 中的 Reducer
+- [reducer.cpp](https://github1s.com/pytorch/pytorch/blob/main/torch/csrc/distributed/c10d/reducer.hpp#L44)
 
+**作用：** <br>
+- 将参数分桶以进行规约。
+- 重置分桶状态(第二个step)。
+- 注册梯度钩子。
+- 记录构造时的 DDP 日志数据。
+- 将 DDP 的句柄传递给 SyncBatchNorm 层。
+
+reducer 中允许自定义通信算子:
+
+- 外部通信函数时： register_comm_hook(distributed.py) --> register_comm_hook(reducer.hpp)
+- 使用pytorch自带通信函数，指定type就行：_register_builtin_comm_hook(distributed.py) --> register_builtin_comm_hook(reducer.hpp)
 
 
 
