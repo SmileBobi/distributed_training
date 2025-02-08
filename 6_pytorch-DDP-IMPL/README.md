@@ -223,7 +223,7 @@ reducer 中允许自定义通信算子:
 **register_fused_optim : 将DDP 注册到optimizer中**
 - [register_fused_optim](https://github1s.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py#L2049)
 
-  **_setup_in_backward_optimizers进行backward 和 optimizer的overlap** <br>
+**_setup_in_backward_optimizers进行backward 和 optimizer的overlap** <br>
 - [register_fused_optim](https://github1s.com/pytorch/pytorch/blob/main/torch/nn/parallel/distributed.py#L1018)
 
 
