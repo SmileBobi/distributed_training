@@ -111,6 +111,20 @@ torchrun \
     fsdp_random.py
 ```
 
+# 7 进程组初始化
+
+| 连接方式 | 风险等级 | 适用环境 | 备注 |
+| --- | --- | --- | --- |
+| `env://` | 低 | 单机/动态环境 | 环境变量需统一 |
+| `tcp://` | 中 | 多机固定IP环境 | 网络互通、端口开放 |
+| `file://` | 高 | 有共享存储的多机环境 | 共享文件系统权限 |
+
+
+推荐选择：
+
+- 单机训练优先用env://（由torchrun自动管理环境变量）。<br>
+- 多机训练推荐tcp://，需手动指定主节点IP和端口2。<br>
+
 # 参考资料
 [why FSDP2](https://github.com/pytorch/torchtitan/blob/main/docs/fsdp.md)
 [pytorch DTensor](https://github.com/pytorch/pytorch/blob/main/torch/distributed/tensor/README.md)
