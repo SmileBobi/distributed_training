@@ -1,4 +1,8 @@
-# 多进程启动及进程间通讯
+# 1 多进程启动及进程间通讯
+
+- [distributed_c10d.py](https://github1s.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d)
+
+- [torchrun](https://pytorch.org/docs/stable/elastic/run.html)
 
 ```python
 import os
@@ -86,7 +90,7 @@ if __name__ == "__main__":
         time.sleep(3)
 ```
 
-# 运行脚本
+# 2 运行脚本
 
 ```bash
 #!/usr/bin/env bash
@@ -96,6 +100,28 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 REPLICA_ID=0 REPLICA_NUM=2 torchrun --standalone --
 CUDA_VISIBLE_DEVICES=0,1,2,3 DEVICE_OFFSET=2 REPLICA_ID=1 REPLICA_NUM=2 torchrun --nnodes=1 --nproc-per-node=2 --rdzv-endpoint=localhost:29400 test_process_group.py &
 ```
 
-# torchrun 启动流程
+# 3 torchrun 启动流程
 
 ![torchrun impl](./images/torchrun.png)
+
+# 4 init_process_group 流程
+
+![torchrun impl](./images/process-group-create.png)
+
+# 5 process group
+
+![torchrun impl](./images/process-group.jpg)
+
+
+# 6 进程组的初始化方法
+
+| 对比维度               | env://                                      | tcp://IP:PORT                                | file:///path/to/file                           |
+|------------------------|---------------------------------------------|----------------------------------------------|------------------------------------------------|
+| 核心机制               | 通过环境变量（MASTER_ADDR、MASTER_PORT 等）自动配置通信参数 | 显式指定主节点的 IP 和端口，通过 TCP 协议建立连接 | 利用共享文件系统同步进程信息，所有进程读写同一文件完成初始化 |
+| 配置复杂度             | 低（需预先设置环境变量）                    | 中（需手动指定 IP 和端口）                   | 中（需确保共享文件路径可访问）                |
+| 适用场景               | 动态集群（如 Kubernetes）、单机多卡训练     | 固定 IP 的局域网环境                         | 共享存储环境（如 NFS）                        |
+| 优点                   | 1. 兼容性强 2. 适合自动化部署               | 1. 显式控制通信地址 2. 适合固定网络环境      | 1. 无需网络配置 2. 适合无网络依赖的共享存储场景 |
+| 缺点                   | 1. 依赖环境变量注入 2. 环境变量未配置时报错 | 1. 需手动管理端口冲突 2. 灵活性较差          | 1. 文件系统可能成为性能瓶颈 2. 需处理文件读写权限 |
+| 典型后端支持           | nccl（GPU）、gloo（CPU）                    | nccl（GPU）、gloo（CPU）                     | gloo（CPU）                                    |
+| 示例代码               | python<br>```dist.init_process_group(backend='nccl', init_method='env://')``` | python<br>```dist.init_process_group(backend='nccl', init_method='tcp://10.0.0.1:23456')``` | python<br>```dist.init_process_group(backend='gloo', init_method='file:///mnt/nfs/shared_file')``` |
+
