@@ -125,3 +125,96 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 DEVICE_OFFSET=2 REPLICA_ID=1 REPLICA_NUM=2 torchrun
 | 典型后端支持           | nccl（GPU）、gloo（CPU）                    | nccl（GPU）、gloo（CPU）                     | gloo（CPU）                                    |
 | 示例代码               | python<br>```dist.init_process_group(backend='nccl', init_method='env://')``` | python<br>```dist.init_process_group(backend='nccl', init_method='tcp://10.0.0.1:23456')``` | python<br>```dist.init_process_group(backend='gloo', init_method='file:///mnt/nfs/shared_file')``` |
 
+# 7 通过Store来交换信息
+
+## 7.1 最终初始化处
+- rank=0 的store 为 server 端，其他 rank 的store 为 client 端
+- 当用agent store 时，在agent 处会单独创建一个server 的 Store；
+- 各sub_group 通过prefixStore 来交换信息.
+
+```python
+    if not 0 <= port < 2**16:
+        raise ValueError(f"port must have value from 0 to 65535 but was {port}.")
+
+    if _torchelastic_use_agent_store():
+        attempt = os.environ["TORCHELASTIC_RESTART_COUNT"]
+        tcp_store = TCPStore(hostname, port, world_size, False, timeout)
+        return PrefixStore(f"/worker/attempt_{attempt}", tcp_store)
+    else:
+        start_daemon = rank == 0
+        return TCPStore(
+            hostname,
+            port,
+            world_size,
+            start_daemon,
+            timeout,
+            multi_tenant=True,
+            use_libuv=use_libuv,
+        )
+```
+
+## 7.2 函数调用栈
+
+![tcp store](./image/TcpStore.png)
+
+
+## 7.3 MasterStore 在elastic 模式下在多进程创建前就启动
+```python
+[R0] ipdb>   /opt/conda/envs/py310/bin/torchrun(33)<module>()
+[R0]      31 if __name__ == '__main__':
+[R0]      32     sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
+[R0] ---> 33     sys.exit(load_entry_point('torch==2.5.0', 'console_scripts', 'torchrun')())
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py(355)wrapper()
+[R0]     354             try:
+[R0] --> 355                 return f(*args, **kwargs)
+[R0]     356             except SystemExit as se:
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/run.py(919)main()
+[R0]     918     args = parse_args(args)
+[R0] --> 919     run(args)
+[R0]     920
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/run.py(910)run()
+[R0]     909     config, cmd, cmd_args = config_from_args(args)
+[R0] --> 910     elastic_launch(
+[R0]     911         config=config,
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/launcher/api.py(138)__call__()
+[R0]     137     def __call__(self, *args):
+[R0] --> 138         return launch_agent(self._config, self._entrypoint, list(args))
+[R0]     139
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/launcher/api.py(241)launch_agent()
+[R0]     240         args=tuple(args),
+[R0] --> 241         rdzv_handler=rdzv_registry.get_rendezvous_handler(rdzv_parameters),
+[R0]     242         max_restarts=config.max_restarts,
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/elastic/rendezvous/registry.py(80)get_rendezvous_handler()
+[R0]      78       my_rdzv_handler = get_rendezvous_handler("my_rdzv_backend_name", RendezvousParameters)
+[R0]      79     """
+[R0] ---> 80     return handler_registry.create_handler(params)
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/elastic/rendezvous/api.py(367)create_handler()
+[R0]     366
+[R0] --> 367         handler = creator(params)
+[R0]     368
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/elastic/rendezvous/registry.py(41)_create_c10d_handler()
+[R0]      40
+[R0] ---> 41     backend, store = create_backend(params)
+[R0]      42
+[R0]
+[R0]   /opt/conda/envs/py310/lib/python3.10/site-packages/torch/distributed/elastic/rendezvous/c10d_rendezvous_backend.py(260)create_backend()
+[R0]     259         elif store_type == "tcp":
+[R0] --> 260             store = _create_tcp_store(params)
+[R0]     261         else:
+```
+
+
+## 7.4 几个TCPStore的初始化方式
+```python
+register_rendezvous_handler("tcp", _tcp_rendezvous_handler)
+register_rendezvous_handler("env", _env_rendezvous_handler)
+register_rendezvous_handler("file", _file_rendezvous_handler)
+```
