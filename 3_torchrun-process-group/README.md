@@ -155,7 +155,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 DEVICE_OFFSET=2 REPLICA_ID=1 REPLICA_NUM=2 torchrun
 
 ## 7.2 函数调用栈
 
-![tcp store](./image/TcpStore.png)
+![tcp store](./images/TcpStore.png)
 
 
 ## 7.3 MasterStore 在elastic 模式下在多进程创建前就启动
