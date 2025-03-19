@@ -35,6 +35,17 @@ export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
 
 - [安装指导](https://github.com/NVIDIA/TransformerEngine)
 
+## 1.8 安装apex
+
+```bash
+git clone https://github.com/NVIDIA/apex
+cd apex
+# if pip >= 23.1 (ref: https://pip.pypa.io/en/stable/news/#v23-1) which supports multiple `--config-settings` with the same key...
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
+# otherwise
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+```
+
 
 # 2 安装Megatron-LM
 ## 2.1 开发模式
@@ -65,3 +76,66 @@ pip install .
 python setup.py build
 python setup.py install
 ```
+
+# 3 数据准备
+## 3.1 下载数据集
+- [下载地址](https://huggingface.co/datasets/mikasenghaas/wikitext-2/tree/main/data)
+
+```bash
+wget https://huggingface.co/datasets/mikasenghaas/wikitext-2/resolve/main/data/train-00000-of-00001.parquet
+```
+
+**转为json格式**<br>
+
+```python
+import pandas as pd
+df = pd.read_parquet('train-00000-of-00001.parquet')
+df.to_json('output.json',  orient='records', lines=True, force_ascii=False)
+```
+
+## 3.2 词汇表下载
+```bash
+wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-vocab.json
+wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-merges.txt
+```
+
+## 3.3 数据预处理
+
+```bash
+cd ~/projects/Megatron-LM
+
+python tools/preprocess_data.py \
+       --input my-input.json \
+       --output-prefix my-gpt2 \
+       --vocab-file gpt2-vocab.json \
+       --tokenizer-type GPT2BPETokenizer \
+       --merge-file gpt2-merges.txt \
+       --append-eod \
+       --workers 8
+```
+
+# 4 启动训练
+
+## 4.1 参数路径修改
+```bash
+CHECKPOINT_PATH="/root/projects/Megatron-LM/checkpoints"
+TENSORBOARD_LOGS_PATH="/root/projects/Megatron-LM/tensorboard_file"
+VOCAB_FILE="/root/projects/Megatron-LM/gpt2-vocab.json"
+MERGE_FILE="/root/projects/Megatron-LM/gpt2-merges.txt"
+DATA_PATH="/root/projects/Megatron-LM/my-gpt2_text_document"
+```
+
+## 4.2 训练参数修改
+```shell
+GPUS_PER_NODE=2
+
+--num-layers 12 \
+--hidden-size 512 \
+--num-attention-heads 8 \
+--seq-length 1024 \
+--tensor-model-parallel-size 1 \
+--pipeline-model-parallel-size 1 \
+```
+
+## 4.3 开始训练
+bash train_gpt3_175b_distributed.sh
