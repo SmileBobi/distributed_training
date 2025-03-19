@@ -120,6 +120,8 @@ for epoch in range(100):
 
 # 2 offload
 
+## 2.1 offload simple
+
 ```python
 import torch
 import torch.nn  as nn
@@ -187,4 +189,31 @@ if __name__ == "__main__":
     train()
 ```
 
-# 3 异步offload
+## 2.2 Megatron-LM optimizer cpu offloading
+
+- [code addr](/root/projects/Megatron-LM/tests/unit_tests/test_optimizer_cpu_offloading.py)
+
+# 3 gradient accumulate
+```python
+# 训练循环
+for epoch in range(10):
+    model.train()
+    optimizer.zero_grad()
+
+    for step, (inputs, labels) in enumerate(train_loader):
+        inputs, labels = inputs.cuda(),  labels.cuda()
+
+        # 混合精度前向传播
+        with autocast():
+            outputs = model(inputs)
+            loss = criterion(outputs, labels) / gradient_accumulate_steps  # 损失归一化
+
+        # 梯度累积反向传播
+        loss.backward()
+
+        # 累积到指定步数后更新参数
+        if (step + 1) % gradient_accumulate_steps == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            print(f'Epoch {epoch} Step {step}: Loss {loss.item()*gradient_accumulate_steps:.4f}')
+```
