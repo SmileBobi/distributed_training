@@ -1,5 +1,6 @@
 # 1. AMP 论文
-- [论文链接](https://github.com/Elvin-Ma/ai_papers/blob/main/mixed_precision/mixed-precision.md)
+- [我的论文链接](https://github.com/Elvin-Ma/ai_papers/blob/main/mixed_precision/mixed-precision.md)
+- [论文链接-EN](https://arxiv.org/pdf/1710.03740)
 
 ![alt text](./images/image.png)
 
