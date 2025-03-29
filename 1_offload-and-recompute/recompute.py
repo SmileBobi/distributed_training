@@ -2,6 +2,7 @@ import torch
 import torch.nn  as nn
 from torch.utils.checkpoint  import checkpoint
 import logging
+torch.cuda.memory_allocated
 
 # 配置 logging，包含文件名、函数名和行号
 logging.basicConfig(
