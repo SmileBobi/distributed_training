@@ -1,5 +1,8 @@
 # 0 MOE 概述
 
+- [Gshard](https://arxiv.org/pdf/2006.16668)
+- [Switch-Transformer](https://arxiv.org/pdf/2101.03961)
+
 当你查看最新发布的大型语言模型（LLM）时，经常会在标题中看到“MoE”。这个“MoE”代表什么？为什么这么多LLM都在使用它？
 
 在本视觉指南中，我们将通过50多个可视化图表，慢慢来探索这个重要的组件——混合专家（MoE）。
@@ -8,16 +11,14 @@
 
 在本视觉指南中，我们将介绍MoE的两个主要组件，即在典型的基于LLM的架构中应用的专家（Experts）和路由器（Router）。<br>
 
-
-
 # 1 What is Mixture of Experts
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;混合专家（MoE）是一种技术，它使用许多不同的子模型（或“专家”）来提高大型语言模型（LLM）的质量。<br>
 
 **MoE由两个主要组件定义：** <br>
 
-专家（Experts）- 现在，每个前馈神经网络（FFNN）层都有一组“专家”，可以选择其中的一个子集。这些“专家”本身通常是前馈神经网络。
+专家（Experts）- 现在，每个前馈神经网络（FFNN）层都有一组“专家”，可以选择其中的一个子集。这些**专家本身通常是前馈神经网络**。
 
-路由器或门控网络（Router or gate network）- 决定哪些词元（tokens）被发送到哪些专家。
+路由器或门控网络（Router or gate network）- 决定哪些词元**tokens被发送到哪些专家**。
 
 在具有MoE的LLM的**每一层**中，我们找到（某种程度上专门化的）专家：
 
