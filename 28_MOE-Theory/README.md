@@ -129,7 +129,7 @@
 
 ![figure 17](https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa6fcabc6-78cd-477f-ac4e-2260cb06e230_1160x688.png)
 
-一个给定的混合专家（MoE）层有两种规模，即稀疏专家混合或密集专家混合。
+一个给定的混合专家（MoE）层有两种规模，即稀疏专家混合或**密集专家混合(工程上基本不用)**。
 
 两者都使用路由器来选择专家，但稀疏MoE只选择少数几个专家，而密集MoE则选择所有专家，但可能以不同的分布进行选择。<br>
 
@@ -169,9 +169,9 @@
 
 ![figure 24](https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9233733c-c152-428a-ae99-1ed185fc3d50_1164x660.png)
 
-这不仅会导致所选专家的分布不均，而且某些专家几乎得不到任何训练。这会在训练和推理过程中都引发问题。
+这不仅会导致所选**专家的分布不均**，而且某些专家几乎**得不到任何训练**。这会在训练和推理过程中都引发问题。
 
-相反，我们希望在训练和推理过程中专家之间具有同等的重要性，这称为负载均衡。在某种程度上，这是为了防止对同一组专家过度拟合。
+相反，我们希望在训练和推理过程中`专家之间具有同等的重要性`，这称为**负载均衡**。在某种程度上，这是为了防止对同一组专家过度拟合。
 
 # 6 Load Balancing
 为了平衡专家的重要性，我们需要关注**路由器**，因为它是决定在给定时刻选择哪些专家的主要组件。
@@ -204,9 +204,9 @@ KeepTopK策略将每个token路由到少数选定的专家。这种方法称为�
 一个主要的好处是，它能够对各专家的贡献进行权衡和整合。
 
 ## 6.3 辅助损失(Auxiliary Loss)
-为了在训练过程中获得更均匀的专家分布，在网络的常规损失中添加了辅助损失（也称为负载均衡损失）。
+为了在训练过程中获得更均匀的专家分布，在网络的常规损失中添加了辅助损失（也称为**负载均衡损失**）。
 
-它增加了一个约束，强制要求专家具有同等的重要性。
+它增加了一个约束，**强制要求专家具有同等的重要性**。
 
 这个辅助损失的第一个组成部分是对整个批次中每个专家的路由器值进行求和：
 
@@ -244,11 +244,11 @@ KeepTopK策略将每个token路由到少数选定的专家。这种方法称为�
 
 在这里，问题不仅仅在于使用了哪些专家，还在于它们**被使用的程度**。
 
-解决这个问题的一个方法是**限制给定专家可以处理的标记数量**，即[专家容量:GShard](https://arxiv.org/pdf/2006.16668)。当某个专家达到容量限制时，后续的标记将被发送给下一个专家：
+解决这个问题的一个方法是**限制给定专家可以处理的标记数量**，即[专家容量:GShard](https://arxiv.org/pdf/2006.16668)。当`某个专家达到容量限制时，后续的标记将被发送给下一个专家`：
 
 ![figure 36](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdf67563f-755a-47a7-bebc-c1ac81a01f8f_1004x568.png)
 
-如果两个专家都达到了他们的容量限制，那么该标记将不会被任何专家处理，而是被发送到下一层。这被称为标记溢出。
+如果两个专家都达到了他们的容量限制，那么该标记将不会被任何专家处理，而是被发送到下一层。这被称为**标记溢出**。
 
 ![figure 37](https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe92ce4c5-affa-454d-8fd2-4debf9a08ce2_1004x544.png)
 
@@ -256,7 +256,7 @@ KeepTopK策略将每个token路由到少数选定的专家。这种方法称为�
 首个处理混合专家（MoE）模型训练不稳定性问题（如负载均衡）的基于Transformer的MoE模型之一是[Switch Transformer]()。它简化了大部分架构和训练过程，同时提高了训练的稳定性。
 
 ## 7.1 The Switching Layer
-Switch Transformer 是一种 T5 模型（编码器-解码器），它用切换层（Switching Layer）替换了传统的前馈神经网络（FFNN）层。切换层是一个稀疏的混合专家（MoE）层，它为每个标记选择单个专家（即采用Top-1路由）。
+Switch Transformer 是一种 T5 模型（编码器-解码器），它用切换层（Switching Layer）替换了传统的前馈神经网络（FFNN）层。切换层是一个稀疏的混合专家（MoE）层，它为**每个标记选择单个专家（即采用Top-1路由）**。
 
 ![figure 38](https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F024d1788-9007-4953-9bf7-883da0db7f8d_1160x688.png)
 
@@ -295,7 +295,7 @@ Switch Transformer 是一种 T5 模型（编码器-解码器），它用切换�
 α是一个超参数，我们可以用来在训练过程中微调此损失的重要性。值过高会盖过主要损失函数的作用，而值过低则对负载均衡影响不大。
 
 # 8 Active vs. Sparse Parameters with Mixtral 8x7B
-混合专家（MoE）模型之所以引人入胜，很大程度上在于其计算需求。由于在任何给定时刻只使用一部分专家，因此我们**能够访问的参数数量比实际使用的要多**。
+混合专家（MoE）模型之所以引人入胜，很大程度上在于**其计算需求**。由于在任何给定时刻只使用一部分专家，因此我们**能够访问的参数数量比实际使用的要多**。
 
 尽管给定的MoE模型需要加载更多的参数（稀疏参数），但在推理过程中由于我们只使用部分专家，因此实际激活的参数较少（活跃参数）。
 
@@ -313,6 +313,11 @@ Switch Transformer 是一种 T5 模型（编码器-解码器），它用切换�
 
 我们需要加载8x5.6B（46.7B）个参数（以及所有共享参数），但进行推理时只需要使用2x5.6B（12.8B）个参数(**推理时Token 是一逐个生成的**)。<br>
 
+# 9 Mixtrial
+- TODO
 
-# 9 参考资料
+# 10 DeepSeeKMOE
+- TODO
+
+# 10 参考资料
 - [A Visual Guide to Mixture of Experts (MoE)](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-mixture-of-experts)
