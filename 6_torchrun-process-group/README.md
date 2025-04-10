@@ -1,6 +1,6 @@
 # 1 多进程启动及进程间通讯
 
-- [distributed_c10d.py](https://github1s.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d)
+- [distributed_c10d.py](https://github1s.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d.py)
 
 - [torchrun](https://pytorch.org/docs/stable/elastic/run.html)
 

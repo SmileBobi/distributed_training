@@ -1,4 +1,4 @@
-# 1. DP（DataParalle）Summary
+# 1. DP（DataParallel）Summary
 
 ## 数据并行的概念
 当一张 GPU 可以存储一个模型时，可以采用数据并行得到更准确的梯度或者加速训练：<br>
