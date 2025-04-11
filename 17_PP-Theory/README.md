@@ -11,7 +11,7 @@
 
 # 3 PipeDream-2BW (Memory-Efficient Pipeline-Parallel DNN Training)
 - [论文链接-EN](https://arxiv.org/pdf/2006.09503)
-- [论文链接-EN](https://yiyibooks.cn/arxiv/2006.09503v3/index.html)
+- [论文链接-CN](https://yiyibooks.cn/arxiv/2006.09503v3/index.html)
 
 # 4. interleave-1f1b
 - [论文地址-EN](https://arxiv.org/pdf/2104.04473)
