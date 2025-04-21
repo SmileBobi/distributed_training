@@ -1,5 +1,5 @@
 # Pipeline Parallelism发展历程
-  [我的papaer](https://github.com/SmileBobi/ai_papers/blob/main/pipeline_parallelism/pp_conclusion.md)
+  [总结](https://github.com/SmileBobi/ai_papers/blob/main/pipeline_parallelism/pp_conclusion.md)
 # 1. Gpipe
 - [我的papaer](https://github.com/Elvin-Ma/ai_papers/blob/main/pipeline_parallelism/gpipe.md)
 - [论文链接-EN](https://arxiv.org/pdf/1811.06965)
