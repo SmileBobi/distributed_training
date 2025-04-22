@@ -14,7 +14,7 @@
 
 # 3. mlp TP and SP special
 
-**SP拆Sequece（在Sequece维度上做切分），单独做layernorm，做完后加一个 g（All gather） 通信算子，此时两个 Y 是一样的（这个时候已经进入到TP中了），这个时候按列切分（YA1,YA2）,分别进行Gelu得到绿色块的Z1，Z2，蓝色的Z1B1和Z2B2是做行切分的，做完之后会有一个通信g杠（Reduce Scatter）`(纯TP的情况下此时做的是All Reduce通信)`, 在Sequece维度上做Scatter，给它拆分开，再做dropout**
+**SP拆Sequece（在Sequece维度上做切分），单独做layernorm，做完后加一个 g（All gather） 通信算子，此时两个 Y 是一样的（这个时候已经进入到TP中了），这个时候按列切分（ $Y A_1^c$ , $Y A_2^c$ ）,分别进行Gelu得到绿色块的Z1，Z2，蓝色的Z1B1和Z2B2是做行切分的，做完之后会有一个通信g杠（Reduce Scatter）`(纯TP的情况下此时做的是All Reduce通信)`, 在Sequece维度上做Scatter，给它拆分开，再做dropout**
 
 - **注意：All Reduce 相当于 All gather + Reduce Scatter**
 - **这种组合方案与纯TP的通信量是一样的，但可以放在两张卡上进行计算，就节约了显存**
