@@ -4,6 +4,7 @@ context\_parallel package
 Context parallelism overview 
 ----------------------------
 
+CP依赖于Ring Attention，Ring Attention又依赖于Flush Attention v2，v2要知道v1版本（很长的故事线），最终集成在megatron-cp
 ![alt text](image.png)
    
    Figure 1: A transformer layer running with TP2CP2. Communications next to Attention are for CP, others are for TP. (AG/RS: all-gather in forward and reduce-scatter in backward, RS/AG: reduce-scatter in forward and all-gather in backward, /AG: no-op in forward and all-gather in backward).

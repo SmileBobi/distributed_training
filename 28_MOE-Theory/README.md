@@ -16,9 +16,14 @@
 
 **MoE由两个主要组件定义：** <br>
 
-专家（Experts）- 现在，每个前馈神经网络（FFNN）层都有一组“专家”，可以选择其中的一个子集。这些**专家本身通常是前馈神经网络**。
+- **专家（Experts）**- 现在，每个前馈神经网络（FFNN/mlp）层都有一组“专家”，可以选择其中的一个子集。这些`专家本身通常是前馈神经网络`。
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;transformer中原来是Attention，之后是mlp，现在引入了MoE之后，有一个mlp分成了很多个mlp，每个mlp的weight是不一样的（在分布式训练是一样的），相互独立的，每一个mlp就是一个专家。`专家是怎么做呢？每个专家是都需要去执行吗？`**Attention之后，到专家之后会把Sequence（是由一个个Token组成的），会把这些Token进行分类，有些Token适合专家1来处理、有些Token适合专家2来处理、有些Token适合专家3来处理，不同的专家处理不同的Token(比如逗号、动词、名词等等)，不同的专家擅长处理不同的任务，最后通过All to all通信算子得到结果**
 
-路由器或门控网络（Router or gate network）- 决定哪些词元**tokens被发送到哪些专家**。
+- **路由器或门控网络（Router or gate network）**- 决定哪些词元`tokens被发送到哪些专家`。
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个Token是有可能同事被分发到不同的专家上，专家计算出来后，按照比例相加起来。
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Router可以通过训练来达到将Token分发到不同的专家上。
+
+
 
 在具有MoE的LLM的**每一层**中，我们找到（某种程度上专门化的）专家：
 
@@ -36,10 +41,11 @@
 ![figure 4](https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb6a623a4-fdbc-4abf-883b-3c2679b4ad4d_1460x640.png)
 
 
+每一层（Layer）都会有一个Router，它决定哪个专家应该处理给定的输入。图中画的不准确
 每个专家并不是一个完整的LLM，而是LLM架构中的一个子模型部分。
 
 # 2 The Experts
-为了探索专家所代表的含义及其工作原理，让我们首先来考察一下MoE旨在替代的是什么：密集层(Dense Layer)。<br>
+为了探索专家所代表的含义及其工作原理，让我们首先来考察一下MoE旨在替代的是什么：密集层(Dense Layer)（指的是MLP层）。<br>
 
 ## 2.1 Dense Layer
 
