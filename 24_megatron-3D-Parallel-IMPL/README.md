@@ -1,7 +1,7 @@
 # 1 megatron-lm 环境搭建
 
 ## 1.1 验证CUDA版本
-nvcc --version  # 应显示 11.x 版本
+nvcc --version  # 应显示 11.x 版本 <br/>
 nvidia-smi      # 确认驱动版本支持CUDA版本
 
 ## 1.2 安装基础编译工具
