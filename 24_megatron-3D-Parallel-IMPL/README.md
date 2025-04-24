@@ -2,7 +2,7 @@
 
 ## 1.1 验证CUDA版本
 nvcc --version  # 应显示 11.x 版本 <br/>
-nvidia-smi      # 确认驱动版本支持CUDA版本
+nvidia-smi      # 确认驱动版本支持CUDA版本,驱动最好是550以上，CUDA版本12.4以上
 
 ## 1.2 安装基础编译工具
 sudo apt-get update
