@@ -165,3 +165,4 @@ GPUS_PER_NODE=2
 ## 4.3 开始训练
 
 bash train_gpt3_175b_distributed.sh
+- [链接](https://github.com/NVIDIA/Megatron-LM/blob/main/examples/gpt3/train_gpt3_175b_distributed.sh)
